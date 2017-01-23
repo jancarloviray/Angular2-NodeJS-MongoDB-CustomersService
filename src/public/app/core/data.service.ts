@@ -7,30 +7,15 @@ import 'rxjs/add/observable/throw';
 import 'rxjs/add/operator/map'; 
 import 'rxjs/add/operator/catch';
 
-import { ICustomer, IOrder, IState } from '../shared/interfaces';
+import { ICustomer, IOrder, IState, IPagedResults } from '../shared/interfaces';
 
 @Injectable()
 export class DataService {
   
     baseUrl: string = '/api/customers';
-    csrfToken: string = null;
 
     constructor(private http: Http) { 
-        this.onInit();
-    }
 
-    onInit() {
-        this.getCsrfToken();
-    }
-
-    getCsrfToken() {
-        return this.http.get('/api/tokens/csrf')
-                   .map((res: Response) => res.json().csrfToken)
-                   .catch(this.handleError)
-                   .subscribe((token: string) => {
-                       this.csrfToken = token;
-                   },
-                   (err) => console.log(err));
     }
     
     getCustomers() : Observable<ICustomer[]> {
@@ -43,7 +28,7 @@ export class DataService {
                    .catch(this.handleError);
     }
 
-    getCustomersPage(page: number, pageSize: number) {
+    getCustomersPage(page: number, pageSize: number) : Observable<IPagedResults<ICustomer[]>> {
         return this.http.get(`${this.baseUrl}/page/${page}/${pageSize}`)
                     .map((res: Response) => {
                         const totalRecords = +res.headers.get('x-inlinecount');
@@ -64,29 +49,37 @@ export class DataService {
     }
 
     insertCustomer(customer: ICustomer) : Observable<ICustomer> {
-        return this.http.post(this.baseUrl, customer, this.getRequestOptions())
+        return this.http.post(this.baseUrl, customer)
                    .map((res: Response) => {
-                       return res.json();
+                       const data = res.json();
+                       console.log('insertCustomer status: ' + data.status);
+                       return data.customer;
                    })
                    .catch(this.handleError);
     }
    
-    updateCustomer(customer: ICustomer) : Observable<boolean> {
-        return this.http.put(this.baseUrl + '/' + customer._id, customer, this.getRequestOptions())
-                   .map((res: Response) => res.json())
+    updateCustomer(customer: ICustomer) : Observable<ICustomer> {
+        return this.http.put(this.baseUrl + '/' + customer._id, customer) 
+                   .map((res: Response) => {
+                       const data = res.json();
+                       console.log('updateCustomer status: ' + data.status);
+                       return data.customer;
+                   })
                    .catch(this.handleError);
     }
 
     deleteCustomer(id: string) : Observable<boolean> {
-
-        return this.http.delete(this.baseUrl + '/' + id, this.getRequestOptions())
-                   .map((res: Response) => res.json())
+        return this.http.delete(this.baseUrl + '/' + id)
+                   .map((res: Response) => res.json().status)
                    .catch(this.handleError);
     }
 
+    //Not used but could be called to pass "options" (3rd parameter) to 
+    //appropriate POST/PUT/DELETE calls made with http
     getRequestOptions() {
+        const csrfToken = ''; //would retrieve from cookie or from page
         const options = new RequestOptions({
-            headers: new Headers({ 'csrf-token': this.csrfToken })
+            headers: new Headers({ 'x-xsrf-token': csrfToken })
         });
         return options;
     }

@@ -52,7 +52,7 @@ export class CustomerEditComponent implements OnInit {
           const cust = JSON.stringify(customer);
           this.customer = JSON.parse(cust);
         },
-        (err) => console.log(err));
+        (err: any) => console.log(err));
   }
 
   getStates() {
@@ -64,15 +64,14 @@ export class CustomerEditComponent implements OnInit {
       if (this.customer._id) {
 
         this.dataService.updateCustomer(this.customer)
-          .subscribe((status: boolean) => {
-            if (status) {
+          .subscribe((customer: ICustomer) => {
+            if (customer) {
               this.router.navigate(['/customers']);
-            }
-            else {
+            } else {
               this.errorMessage = 'Unable to save customer';
             }
           },
-          (err) => console.log(err));
+          (err: any) => console.log(err));
 
       } else {
 
@@ -85,7 +84,7 @@ export class CustomerEditComponent implements OnInit {
               this.errorMessage = 'Unable to add customer';
             }
           },
-          (err) => console.log(err));
+          (err: any) => console.log(err));
           
       }
   }
